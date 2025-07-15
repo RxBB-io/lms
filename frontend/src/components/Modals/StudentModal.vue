@@ -68,8 +68,13 @@ const addStudent = (close) => {
 		{},
 		{
 			onSuccess() {
-				if (user.data?.is_system_manager)
-					updateOnboardingStep('add_batch_student')
+				if (user.data?.is_system_manager) {
+					try {
+						updateOnboardingStep('add_batch_student')
+					} catch (error) {
+						console.warn('Onboarding system not available:', error)
+					}
+				}
 
 				students.value.reload()
 				batchModal.value.reload()

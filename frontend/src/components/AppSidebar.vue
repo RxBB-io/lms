@@ -83,11 +83,7 @@
 				"
 				:isSidebarCollapsed="sidebarStore.isSidebarCollapsed"
 			/>
-			<GettingStartedBanner
-				v-if="showOnboarding && !isOnboardingStepsCompleted"
-				:isSidebarCollapsed="sidebarStore.isSidebarCollapsed"
-				appName="learning"
-			/>
+			<!-- GettingStartedBanner removed -->
 
 			<div
 				class="flex items-center mt-4"
@@ -119,23 +115,8 @@
 							</div>
 						</template>
 					</Tooltip>
-					<Tooltip :text="__('Powered by Learning')">
-						<Zap
-							class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer"
-							@click="redirectToWebsite()"
-						/>
-					</Tooltip>
-					<Tooltip v-if="showOnboarding" :text="__('Help')">
-						<CircleHelp
-							class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer"
-							@click="
-								() => {
-									showHelpModal = minimize ? true : !showHelpModal
-									minimize = !showHelpModal
-								}
-							"
-						/>
-					</Tooltip>
+					<!-- Powered by Learning Zap icon removed -->
+					<!-- Help CircleHelp icon removed -->
 				</div>
 				<Tooltip
 					:text="
@@ -152,23 +133,7 @@
 				</Tooltip>
 			</div>
 		</div>
-		<HelpModal
-			v-if="showOnboarding && showHelpModal"
-			v-model="showHelpModal"
-			v-model:articles="articles"
-			appName="learning"
-			title="Frappe Learning"
-			:logo="LMSLogo"
-			:afterSkip="(step) => capture('onboarding_step_skipped_' + step)"
-			:afterSkipAll="() => capture('onboarding_steps_skipped')"
-			:afterReset="(step) => capture('onboarding_step_reset_' + step)"
-			:afterResetAll="() => capture('onboarding_steps_reset')"
-			docsLink="https://docs.frappe.io/learning"
-		/>
-		<IntermediateStepModal
-			v-model="showIntermediateModal"
-			:currentStep="currentStep"
-		/>
+		<!-- HelpModal and IntermediateStepModal removed to disable step-by-step getting started guide -->
 	</div>
 	<PageModal
 		v-model="showPageModal"
@@ -186,9 +151,6 @@ import {
 	onMounted,
 	inject,
 	watch,
-	reactive,
-	markRaw,
-	h,
 	onUnmounted,
 } from 'vue'
 import { getSidebarLinks } from '@/utils'
@@ -198,34 +160,16 @@ import { useSidebar } from '@/stores/sidebar'
 import { useSettings } from '@/stores/settings'
 import { Button, createResource, Tooltip } from 'frappe-ui'
 import PageModal from '@/components/Modals/PageModal.vue'
-import { capture } from '@/telemetry'
-import LMSLogo from '@/components/Icons/LMSLogo.vue'
-import { useRouter } from 'vue-router'
-import InviteIcon from './Icons/InviteIcon.vue'
 import {
-	BookOpen,
 	CircleAlert,
 	ChevronRight,
 	Plus,
-	CircleHelp,
-	FolderTree,
-	FileText,
-	UserPlus,
-	Users,
-	BookText,
-	Zap,
 } from 'lucide-vue-next'
 import {
 	TrialBanner,
-	HelpModal,
-	GettingStartedBanner,
-	useOnboarding,
-	showHelpModal,
-	minimize,
-	IntermediateStepModal,
 } from 'frappe-ui/frappe'
 
-const { user } = sessionStore()
+const { user, sidebarSettings } = sessionStore()
 const { userResource } = usersStore()
 let sidebarStore = useSidebar()
 const socket = inject('$socket')
@@ -236,24 +180,11 @@ const isModerator = ref(false)
 const isInstructor = ref(false)
 const pageToEdit = ref(null)
 const settingsStore = useSettings()
-const { sidebarSettings } = settingsStore
-const showOnboarding = ref(false)
-const showIntermediateModal = ref(false)
-const currentStep = ref({})
-const router = useRouter()
-let onboardingDetails
-let isOnboardingStepsCompleted = false
 const readOnlyMode = window.read_only_mode
-const iconProps = {
-	strokeWidth: 1.5,
-	width: 16,
-	height: 16,
-}
 
 onMounted(() => {
 	addNotifications()
 	setSidebarLinks()
-	setUpOnboarding()
 	socket.on('publish_lms_notifications', (data) => {
 		unreadNotifications.reload()
 	})
@@ -314,7 +245,7 @@ const addNotifications = () => {
 
 const addQuizzes = () => {
 	if (isInstructor.value || isModerator.value) {
-		sidebarLinks.value.splice(4, 0, {
+		sidebarLinks.value.push({
 			label: 'Quizzes',
 			icon: 'CircleHelp',
 			to: 'Quizzes',
@@ -330,7 +261,7 @@ const addQuizzes = () => {
 
 const addAssignments = () => {
 	if (isInstructor.value || isModerator.value) {
-		sidebarLinks.value.splice(5, 0, {
+		sidebarLinks.value.push({
 			label: 'Assignments',
 			icon: 'Pencil',
 			to: 'Assignments',
@@ -398,6 +329,16 @@ const deletePage = (link) => {
 	)
 }
 
+watch(userResource, () => {
+	if (userResource.data) {
+		isModerator.value = userResource.data.is_moderator
+		isInstructor.value = userResource.data.is_instructor
+		addPrograms()
+		addQuizzes()
+		addAssignments()
+	}
+})
+
 const toggleSidebar = () => {
 	sidebarStore.isSidebarCollapsed = !sidebarStore.isSidebarCollapsed
 	localStorage.setItem(
@@ -412,229 +353,6 @@ const toggleWebPages = () => {
 		'isWebpagesCollapsed',
 		JSON.stringify(sidebarStore.isWebpagesCollapsed)
 	)
-}
-
-const getFirstCourse = async () => {
-	let firstCourse = localStorage.getItem('firstCourse')
-	if (firstCourse) return firstCourse
-	return await call('lms.lms.onboarding.get_first_course')
-}
-
-const getFirstBatch = async () => {
-	let firstBatch = localStorage.getItem('firstBatch')
-	if (firstBatch) return firstBatch
-	return await call('lms.lms.onboarding.get_first_batch')
-}
-
-const steps = reactive([
-	{
-		name: 'create_first_course',
-		title: __('Create your first course'),
-		icon: markRaw(h(BookOpen, iconProps)),
-		completed: false,
-		onClick: () => {
-			minimize.value = true
-			router.push({
-				name: 'Courses',
-			})
-		},
-	},
-	{
-		name: 'create_first_chapter',
-		title: __('Add your first chapter'),
-		icon: markRaw(h(FolderTree, iconProps)),
-		completed: false,
-		dependsOn: 'create_first_course',
-		onClick: async () => {
-			minimize.value = true
-			let course = await getFirstCourse()
-			if (course) {
-				router.push({ name: 'CourseForm', params: { courseName: course } })
-			} else {
-				router.push({ name: 'CourseForm' })
-			}
-		},
-	},
-	{
-		name: 'create_first_lesson',
-		title: __('Add your first lesson'),
-		icon: markRaw(h(FileText, iconProps)),
-		completed: false,
-		dependsOn: 'create_first_chapter',
-		onClick: async () => {
-			minimize.value = true
-			let course = await getFirstCourse()
-			if (course) {
-				router.push({
-					name: 'CourseForm',
-					params: { courseName: course },
-				})
-			} else {
-				router.push({ name: 'Courses' })
-			}
-		},
-	},
-	{
-		name: 'create_first_quiz',
-		title: __('Create your first quiz'),
-		icon: markRaw(h(CircleHelp, iconProps)),
-		completed: false,
-		dependsOn: 'create_first_course',
-		onClick: () => {
-			minimize.value = true
-			router.push({ name: 'Quizzes' })
-		},
-	},
-	{
-		name: 'invite_students',
-		title: __('Invite your team and students'),
-		icon: markRaw(h(InviteIcon, iconProps)),
-		completed: false,
-		onClick: () => {
-			minimize.value = true
-			settingsStore.activeTab = 'Members'
-			settingsStore.isSettingsOpen = true
-		},
-	},
-	{
-		name: 'create_first_batch',
-		title: __('Create your first batch'),
-		icon: markRaw(h(Users, iconProps)),
-		completed: false,
-		onClick: () => {
-			minimize.value = true
-			router.push({ name: 'Batches' })
-		},
-	},
-	{
-		name: 'add_batch_student',
-		title: __('Add students to your batch'),
-		icon: markRaw(h(UserPlus, iconProps)),
-		completed: false,
-		dependsOn: 'create_first_batch',
-		onClick: async () => {
-			minimize.value = true
-			let batch = await getFirstBatch()
-			if (batch) {
-				router.push({
-					name: 'Batch',
-					params: {
-						batchName: batch,
-					},
-				})
-			} else {
-				router.push({ name: 'Batch' })
-			}
-		},
-	},
-	{
-		name: 'add_batch_course',
-		title: __('Add courses to your batch'),
-		icon: markRaw(h(BookText, iconProps)),
-		completed: false,
-		dependsOn: 'create_first_batch',
-		onClick: async () => {
-			minimize.value = true
-			let batch = await getFirstBatch()
-			if (batch) {
-				router.push({
-					name: 'Batch',
-					params: {
-						batchName: batch,
-					},
-					hash: '#courses',
-				})
-			} else {
-				router.push({ name: 'Batch' })
-			}
-		},
-	},
-])
-
-const articles = ref([
-	{
-		title: __('Introduction'),
-		opened: false,
-		subArticles: [
-			{ name: 'introduction', title: __('Introduction') },
-			{ name: 'setting-up', title: __('Setting up') },
-		],
-	},
-	{
-		title: __('Creating a course'),
-		opened: false,
-		subArticles: [
-			{ name: 'create-a-course', title: __('Create a course') },
-			{ name: 'add-a-chapter', title: __('Add a chapter') },
-			{ name: 'add-a-lesson', title: __('Add a lesson') },
-		],
-	},
-	{
-		title: __('Creating a batch'),
-		opened: false,
-		subArticles: [
-			{ name: 'create-a-batch', title: __('Create a batch') },
-			{ name: 'create-a-live-class', title: __('Create a live class') },
-		],
-	},
-	{
-		title: __('Assessments'),
-		opened: false,
-		subArticles: [
-			{ name: 'quizzes', title: __('Quizzes') },
-			{ name: 'assignments', title: __('Assignments') },
-		],
-	},
-	{
-		title: __('Certification'),
-		opened: false,
-		subArticles: [
-			{ name: 'issue-a-certificate', title: __('Issue a Certificate') },
-			{
-				name: 'custom-certificate-templates',
-				title: __('Custom Certificate Templates'),
-			},
-		],
-	},
-	{
-		title: __('Monetization'),
-		opened: false,
-		subArticles: [
-			{
-				name: 'setting-up-payment-gateway',
-				title: __('Setting up payment gateway'),
-			},
-		],
-	},
-	{
-		title: __('Settings'),
-		opened: false,
-		subArticles: [{ name: 'roles', title: __('Roles') }],
-	},
-])
-
-const setUpOnboarding = () => {
-	if (userResource.data?.is_system_manager) {
-		onboardingDetails = useOnboarding('learning')
-		onboardingDetails.setUp(steps)
-		isOnboardingStepsCompleted = onboardingDetails.isOnboardingStepsCompleted
-		showOnboarding.value = true
-	}
-}
-
-watch(userResource, () => {
-	if (userResource.data) {
-		isModerator.value = userResource.data.is_moderator
-		isInstructor.value = userResource.data.is_instructor
-		addPrograms()
-		addQuizzes()
-		addAssignments()
-		setUpOnboarding()
-	}
-})
-
-const redirectToWebsite = () => {
-	window.open('https://frappe.io/learning', '_blank')
 }
 
 onUnmounted(() => {

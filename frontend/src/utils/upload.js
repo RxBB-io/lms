@@ -1,6 +1,7 @@
 import AudioBlock from '@/components/AudioBlock.vue'
 import VideoBlock from '@/components/VideoBlock.vue'
 import UploadPlugin from '@/components/UploadPlugin.vue'
+import DocumentViewer from '@/components/DocumentViewer.vue'
 import { h, createApp } from 'vue'
 import { Upload as UploadIcon } from 'lucide-vue-next'
 import { createDialog } from '@/utils/dialogs'
@@ -71,6 +72,24 @@ export class Upload {
 				file.file_url
 			)}" width='100%' height='700px' class="mb-4" type="application/pdf"></iframe>`
 			return
+		} else if (this.isPowerPoint(file.file_type)) {
+			const app = createApp(DocumentViewer, {
+				fileUrl: window.location.origin + file.file_url,
+				fileType: file.file_type,
+			})
+			app.use(translationPlugin)
+			app.config.globalProperties.$dialog = createDialog
+			app.mount(this.wrapper)
+			return
+		} else if (this.isWord(file.file_type)) {
+			const app = createApp(DocumentViewer, {
+				fileUrl: window.location.origin + file.file_url,
+				fileType: file.file_type,
+			})
+			app.use(translationPlugin)
+			app.config.globalProperties.$dialog = createDialog
+			app.mount(this.wrapper)
+			return
 		} else {
 			this.wrapper.innerHTML = `<img class="mb-4" src=${encodeURI(
 				file.file_url
@@ -112,5 +131,13 @@ export class Upload {
 
 	isAudio(type) {
 		return ['mp3', 'wav', 'ogg'].includes(type.toLowerCase())
+	}
+
+	isPowerPoint(type) {
+		return ['ppt', 'pptx', 'pps', 'ppsx'].includes(type.toLowerCase())
+	}
+
+	isWord(type) {
+		return ['doc', 'docx', 'rtf'].includes(type.toLowerCase())
 	}
 }

@@ -141,8 +141,13 @@ const addChapter = async (close) => {
 				return validateChapter()
 			},
 			onSuccess: (data) => {
-				if (user.data?.is_system_manager)
-					updateOnboardingStep('create_first_chapter')
+				if (user.data?.is_system_manager) {
+					try {
+						updateOnboardingStep('create_first_chapter')
+					} catch (error) {
+						console.warn('Onboarding system not available:', error)
+					}
+				}
 
 				capture('chapter_created')
 				chapterReference.submit(
