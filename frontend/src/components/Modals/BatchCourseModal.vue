@@ -85,8 +85,13 @@ const addCourse = (close) => {
 		{},
 		{
 			onSuccess() {
-				if (user.data?.is_system_manager)
-					updateOnboardingStep('add_batch_course')
+				if (user.data?.is_system_manager) {
+					try {
+						updateOnboardingStep('add_batch_course')
+					} catch (error) {
+						console.warn('Onboarding system not available:', error)
+					}
+				}
 
 				close()
 				courses.value.reload()

@@ -1,6 +1,6 @@
 <template>
 	<FileUploader
-		:fileTypes="['image/*', 'video/*', 'audio/*', '.pdf']"
+		:fileTypes="['image/*', 'video/*', 'audio/*', '.pdf', '.ppt', '.pptx', '.pps', '.ppsx', '.doc', '.docx', '.rtf']"
 		:validateFile="validateFile"
 		@success="(data) => addFile(data)"
 		ref="fileUploader"
@@ -38,8 +38,14 @@ const addFile = (file) => {
 
 const validateFile = (file) => {
 	let extension = file.name.split('.').pop().toLowerCase()
-	if (!['jpg', 'jpeg', 'png', 'mp4', 'mov', 'mp3', 'pdf'].includes(extension)) {
-		return 'Only image and video files are allowed.'
+	if (!['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mkv', 'webm', 'mp3', 'wav', 'ogg', 'pdf', 'ppt', 'pptx', 'pps', 'ppsx', 'doc', 'docx', 'rtf'].includes(extension)) {
+		return 'Only image, video, audio, PDF, PowerPoint (.ppt, .pptx, .pps, .ppsx), and Word (.doc, .docx, .rtf) files are allowed.'
+	}
+	
+	// Check file size (optional - you can adjust the limit)
+	const maxSize = 100 * 1024 * 1024 // 100MB limit
+	if (file.size > maxSize) {
+		return 'File size must be less than 100MB.'
 	}
 }
 
