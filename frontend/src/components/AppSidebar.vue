@@ -169,7 +169,8 @@ import {
 	TrialBanner,
 } from 'frappe-ui/frappe'
 
-const { user, sidebarSettings } = sessionStore()
+const { user } = sessionStore()
+const { sidebarSettings } = useSettings()
 const { userResource } = usersStore()
 let sidebarStore = useSidebar()
 const socket = inject('$socket')
