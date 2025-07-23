@@ -1,10 +1,10 @@
 from . import __version__ as app_version
 
 app_name = "frappe_lms"
-app_title = "Frappe LMS"
+app_title = "Frappe LMS"  # Change this to your custom title if needed
 app_publisher = "Frappe"
 app_description = "Frappe LMS App"
-app_icon_url = "/assets/lms/images/lms-logo.png"
+app_icon_url = "/assets/lms/images/custom-lms-logo.png"  # Your custom logo
 app_icon_title = "Learning"
 app_icon_route = "/lms"
 app_color = "grey"
@@ -247,7 +247,7 @@ on_login = "lms.lms.user.on_login"
 add_to_apps_screen = [
 	{
 		"name": "lms",
-		"logo": "/assets/lms/frontend/learning.svg",
+		"logo": "/assets/lms/images/custom-lms-logo.svg",  # Your custom logo
 		"title": "Learning",
 		"route": "/lms",
 		"has_permission": "lms.lms.api.check_app_permission",

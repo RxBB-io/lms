@@ -43,4 +43,53 @@ export default defineConfig({
 			'plyr',
 		],
 	},
+	build: {
+		// Optimize build performance and reduce memory usage
+		chunkSizeWarningLimit: 1000,
+		rollupOptions: {
+			output: {
+				// Create separate chunks for large dependencies
+				manualChunks: {
+					'editorjs': [
+						'@editorjs/editorjs',
+						'@editorjs/header',
+						'@editorjs/paragraph',
+						'@editorjs/checklist',
+						'@editorjs/code',
+						'@editorjs/embed',
+						'@editorjs/table',
+						'@editorjs/nested-list',
+						'@editorjs/simple-image',
+						'@editorjs/inline-code'
+					],
+					'charts': [
+						'chart.js',
+						'apexcharts',
+						'vue-chartjs',
+						'vue3-apexcharts'
+					],
+					'codemirror': [
+						'codemirror',
+						'vue-codemirror',
+						'@codemirror/lang-html',
+						'@codemirror/lang-javascript',
+						'@codemirror/lang-json',
+						'@codemirror/lang-python',
+						'thememirror'
+					],
+					'frappe-ui': ['frappe-ui'],
+					'vue-vendor': ['vue', 'vue-router', 'pinia']
+				}
+			}
+		},
+		// Disable source maps in production to save memory
+		sourcemap: false,
+		// Reduce memory usage during minification
+		terserOptions: {
+			compress: {
+				drop_console: true,
+				drop_debugger: true,
+			},
+		},
+	},
 })
