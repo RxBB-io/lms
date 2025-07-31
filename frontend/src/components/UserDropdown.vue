@@ -12,8 +12,8 @@
 				"
 			>
 				<img
-					v-if="branding.data?.banner_image"
-					:src="branding.data?.banner_image.file_url"
+					v-if="branding.data?.app_logo"
+					:src="branding.data?.app_logo"
 					class="w-8 h-8 rounded flex-shrink-0"
 				/>
 				<LMSLogo v-else class="w-8 h-8 rounded flex-shrink-0" />
@@ -33,7 +33,7 @@
 						>
 							{{ branding.data?.app_name }}
 						</span>
-						<span v-else> Learning </span>
+						<span v-else> RxBB Learning </span>
 					</div>
 					<div
 						v-if="userResource.data"
